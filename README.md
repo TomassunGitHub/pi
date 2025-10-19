@@ -77,6 +77,13 @@ python run.py
 - ✅ 调整占空比（0-100%）
 - ✅ 支持硬件PWM（pigpio）
 
+### 电子元器件演示
+- 🎛️ **SG90舵机控制** - 完整的舵机控制演示页面
+  - 可视化角度显示和动画
+  - 多种控制方式（滑块、快捷按钮、步进、扫描）
+  - 实时输出参数监控（角度、脉冲宽度、占空比等）
+  - 详见 [SERVO_SG90_DEMO.md](SERVO_SG90_DEMO.md)
+
 ### 系统功能
 - ✅ 引脚状态实时更新
 - ✅ 系统状态监控（`/debug`端点）
@@ -282,6 +289,7 @@ MIT License
 
 - 📖 [TEST_README.md](TEST_README.md) - 测试文档
 - 📖 [CHANGELOG.md](CHANGELOG.md) - 版本更新日志
+- 🎛️ [SERVO_SG90_DEMO.md](SERVO_SG90_DEMO.md) - SG90舵机控制演示
 
 ---
 

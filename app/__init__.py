@@ -56,8 +56,12 @@ def create_app(config_name=None):
 
     # Import GPIO controller
     from .gpio_controller import GPIOController
+    from .demos import SG90Servo
 
     gpio_controller = GPIOController(socketio)
+
+    # Initialize demo components
+    servo = SG90Servo(pin=18)  # GPIO 18 supports hardware PWM
 
     # Routes
     @app.route("/")
@@ -76,6 +80,12 @@ def create_app(config_name=None):
             return {"status": "ok", "debug_info": system_status}
         except Exception as e:
             return {"status": "error", "error": str(e)}
+
+    # Demo routes
+    @app.route("/demos/servo-sg90")
+    def demo_servo_sg90():
+        """SG90 Servo demo page"""
+        return render_template("demos/servo_sg90.html")
 
     # SocketIO events
     @socketio.on("connect")
@@ -203,6 +213,106 @@ def create_app(config_name=None):
                 "pin_info_response",
                 {"success": False, "error": "Missing pin parameter"},
             )
+
+    # ========================
+    # Servo Demo SocketIO Events
+    # ========================
+
+    @socketio.on("servo_enable")
+    @socketio_error_handler
+    def handle_servo_enable():
+        """Enable servo motor"""
+        result = servo.enable()
+        emit("servo_response", result)
+        if result["success"]:
+            # Emit initial status
+            status = servo.get_status()
+            emit("servo_status", status)
+
+    @socketio.on("servo_disable")
+    @socketio_error_handler
+    def handle_servo_disable():
+        """Disable servo motor"""
+        result = servo.disable()
+        emit("servo_response", result)
+        if result["success"]:
+            status = servo.get_status()
+            emit("servo_status", status)
+
+    @socketio.on("servo_set_angle")
+    @socketio_error_handler
+    def handle_servo_set_angle(data):
+        """Set servo angle"""
+        angle = data.get("angle")
+        smooth = data.get("smooth", False)
+
+        if angle is not None:
+            result = servo.set_angle(angle, smooth)
+            emit("servo_response", result)
+            if result["success"]:
+                status = servo.get_status()
+                emit("servo_status", status)
+        else:
+            emit(
+                "servo_response", {"success": False, "error": "Missing angle parameter"}
+            )
+
+    @socketio.on("servo_step")
+    @socketio_error_handler
+    def handle_servo_step(data):
+        """Step move servo"""
+        step = data.get("step")
+
+        if step is not None:
+            result = servo.step_move(step)
+            emit("servo_response", result)
+            if result["success"]:
+                status = servo.get_status()
+                emit("servo_status", status)
+        else:
+            emit(
+                "servo_response", {"success": False, "error": "Missing step parameter"}
+            )
+
+    @socketio.on("servo_scan_start")
+    @socketio_error_handler
+    def handle_servo_scan_start(data):
+        """Start servo scan mode"""
+        start_angle = data.get("start_angle", 0)
+        end_angle = data.get("end_angle", 180)
+        speed = data.get("speed", "medium")
+
+        result = servo.start_scan(start_angle, end_angle, speed)
+        emit("servo_response", result)
+        if result["success"]:
+            status = servo.get_status()
+            emit("servo_status", status)
+
+    @socketio.on("servo_scan_stop")
+    @socketio_error_handler
+    def handle_servo_scan_stop():
+        """Stop servo scan mode"""
+        result = servo.stop_scan()
+        emit("servo_response", result)
+        if result["success"]:
+            status = servo.get_status()
+            emit("servo_status", status)
+
+    @socketio.on("servo_emergency_stop")
+    @socketio_error_handler
+    def handle_servo_emergency_stop():
+        """Emergency stop servo"""
+        result = servo.emergency_stop()
+        emit("servo_response", result)
+        status = servo.get_status()
+        emit("servo_status", status)
+
+    @socketio.on("servo_get_status")
+    @socketio_error_handler
+    def handle_servo_get_status():
+        """Get servo status"""
+        status = servo.get_status()
+        emit("servo_status", status)
 
     # Note: GPIO cleanup is handled via:
     # 1. User clicking "清理GPIO" button (socketio event: gpio_cleanup)
